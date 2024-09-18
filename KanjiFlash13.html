@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcard App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .card {
+            border: 2px solid #333;
+            padding: 20px;
+            margin-top: 60px; /* Increased top margin */
+            margin-bottom: 10px; /* Reduced bottom margin */
+            text-align: center;
+            width: 250px; /* Fixed width for the card */
+            height: 200px; /* Adjusted height for more space */
+        }
+        #kanji {
+            font-size: 3em; /* Make Kanji text larger */
+            margin-top: 40px; /* Increased margin from top to Kanji */
+            margin-bottom: 20px; /* Space below Kanji */
+        }
+        #kana, #meaning {
+            margin-top: 10px; /* Space above Kana and Meaning */
+        }
+        #meaning {
+            margin-bottom: 10px; /* Reduced margin between Meaning and bottom of card */
+        }
+        .button {
+            border: none;
+            padding: 10px 15px;
+            margin: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        #showKana {
+            background-color: #28a745; /* Green */
+            color: white;
+        }
+        #showMeaning {
+            background-color: #6f42c1; /* Purple */
+            color: white;
+        }
+        .highlight {
+            background-color: #f39c12; /* Example complementary color */
+        }
+        #progress {
+            margin-top: 15px; /* Normal space between Progress label and field */
+            padding-bottom: 20px; /* Added 20px padding after Progress */
+        }
+        .button:active {
+            opacity: 0.8; /* Slightly change opacity on mouse down */
+        }
+        .button:focus {
+            outline: none; /* Remove outline on focus */
+        }
+        #message {
+            color: red;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card" id="flashcard">
+    <div id="kanji">会う</div>
+    <div id="kana" style="display:none;"></div>
+    <div id="meaning" style="display:none;"></div>
+</div>
+
+<div>
+    <input type="checkbox" id="correctGuess" />
+    <label for="correctGuess">Yes!</label>
+</div>
+
+<div id="progress">Progress: 0</div>
+
+<div>
+    <button class="button" id="showKana">Show Kana</button>
+    <button class="button" id="showMeaning">Show Meaning</button>
+</div>
+
+<div>
+    <button class="button" id="back" disabled>Back</button>
+    <button class="button highlight" id="random">Random</button>
+    <button class="button" id="next">Next</button>
+</div>
+
+<div>
+    <button class="button" id="showFirstCorrect">Show First Correct</button>
+    <button class="button" id="nextCorrect">Next Correct</button>
+</div>
+
+<div id="message" style="padding-bottom: 30px;"></div> <!-- Added 30px padding after the button row -->
+
+<script>
+    const flashcards = [
+    { "kanji": "会う", "word": "あう", "meaning": "meet" },
+    { "kanji": "赤い", "word": "あかい", "meaning": "red" },
+    { "kanji": "秋", "word": "あき", "meaning": "autumn" },
+    { "kanji": "朝", "word": "あさ", "meaning": "morning" },
+    { "kanji": "犬", "word": "いぬ", "meaning": "dog" },
+    { "kanji": "家", "word": "いえ", "meaning": "house" },
+    { "kanji": "今", "word": "いま", "meaning": "now" },
+    { "kanji": "行く", "word": "いく", "meaning": "go" },
+    { "kanji": "いい", "word": "いい", "meaning": "good" },
+    { "kanji": "言う", "word": "いう", "meaning": "say" },
+    { "kanji": "大きい", "word": "おおきい", "meaning": "big" },
+    { "kanji": "女", "word": "おんな", "meaning": "woman" },
+    { "kanji": "男", "word": "おとこ", "meaning": "man" },
+    { "kanji": "音", "word": "おと", "meaning": "sound" },
+    { "kanji": "お金", "word": "おかね", "meaning": "money" },
+    { "kanji": "書く", "word": "かく", "meaning": "write" },
+    { "kanji": "買う", "word": "かう", "meaning": "buy" },
+    { "kanji": "風", "word": "かぜ", "meaning": "wind" },
+    { "kanji": "火", "word": "ひ", "meaning": "fire" },
+    { "kanji": "月", "word": "つき", "meaning": "moon" },
+    { "kanji": "日", "word": "ひ", "meaning": "day/sun" },
+    { "kanji": "水", "word": "みず", "meaning": "water" },
+    { "kanji": "木", "word": "き", "meaning": "tree" },
+    { "kanji": "山", "word": "やま", "meaning": "mountain" },
+    { "kanji": "川", "word": "かわ", "meaning": "river" },
+    { "kanji": "空", "word": "そら", "meaning": "sky" },
+    { "kanji": "食べる", "word": "たべる", "meaning": "eat" },
+    { "kanji": "見る", "word": "みる", "meaning": "see" },
+    { "kanji": "聞く", "word": "きく", "meaning": "hear" },
+    { "kanji": "話す", "word": "はなす", "meaning": "talk" },
+    { "kanji": "立つ", "word": "たつ", "meaning": "stand" },
+    { "kanji": "座る", "word": "すわる", "meaning": "sit" },
+    { "kanji": "寝る", "word": "ねる", "meaning": "sleep" },
+    { "kanji": "走る", "word": "はしる", "meaning": "run" },
+    { "kanji": "飲む", "word": "のむ", "meaning": "drink" },
+    { "kanji": "遊ぶ", "word": "あそぶ", "meaning": "play" },
+    { "kanji": "知る", "word": "しる", "meaning": "know" },
+    { "kanji": "買い物", "word": "かいもの", "meaning": "shopping" },
+    { "kanji": "仕事", "word": "しごと", "meaning": "work" },
+    { "kanji": "友達", "word": "ともだち", "meaning": "friend" },
+    { "kanji": "家族", "word": "かぞく", "meaning": "family" },
+    { "kanji": "学校", "word": "がっこう", "meaning": "school" },
+    { "kanji": "先生", "word": "せんせい", "meaning": "teacher" },
+    { "kanji": "学生", "word": "がくせい", "meaning": "student" },
+    { "kanji": "時間", "word": "じかん", "meaning": "time" },
+    { "kanji": "今晩", "word": "こんばん", "meaning": "tonight" },
+    { "kanji": "明日", "word": "あした", "meaning": "tomorrow" },
+    { "kanji": "昨日", "word": "きのう", "meaning": "yesterday" },
+    { "kanji": "毎日", "word": "まいにち", "meaning": "every day" },
+    { "kanji": "毎週", "word": "まいしゅう", "meaning": "every week" },
+    { "kanji": "毎月", "word": "まいつき", "meaning": "every month" },
+    { "kanji": "時", "word": "とき", "meaning": "time" },
+    { "kanji": "月曜日", "word": "げつようび", "meaning": "Monday" },
+    { "kanji": "火曜日", "word": "かようび", "meaning": "Tuesday" },
+    { "kanji": "水曜日", "word": "すいようび", "meaning": "Wednesday" },
+    { "kanji": "木曜日", "word": "もくようび", "meaning": "Thursday" },
+    { "kanji": "金曜日", "word": "きんようび", "meaning": "Friday" },
+    { "kanji": "土曜日", "word": "どようび", "meaning": "Saturday" },
+    { "kanji": "日曜日", "word": "にちようび", "meaning": "Sunday" },
+    { "kanji": "春", "word": "はる", "meaning": "spring" },
+    { "kanji": "夏", "word": "なつ", "meaning": "summer" },
+    { "kanji": "冬", "word": "ふゆ", "meaning": "winter" },
+    { "kanji": "好き", "word": "すき", "meaning": "like" },
+    { "kanji": "嫌い", "word": "きらい", "meaning": "dislike" },
+    { "kanji": "楽しい", "word": "たのしい", "meaning": "fun" },
+    { "kanji": "難しい", "word": "むずかしい", "meaning": "difficult" },
+    { "kanji": "簡単", "word": "かんたん", "meaning": "easy" },
+    { "kanji": "大好き", "word": "だいすき", "meaning": "love" },
+    { "kanji": "美しい", "word": "うつくしい", "meaning": "beautiful" },
+    { "kanji": "新しい", "word": "あたらしい", "meaning": "new" },
+    { "kanji": "古い", "word": "ふるい", "meaning": "old" },
+    { "kanji": "高い", "word": "たかい", "meaning": "expensive/high" },
+    { "kanji": "安い", "word": "やすい", "meaning": "cheap" },
+    { "kanji": "近い", "word": "ちかい", "meaning": "close" },
+    { "kanji": "遠い", "word": "とおい", "meaning": "far" },
+    { "kanji": "早い", "word": "はやい", "meaning": "fast/early" },
+    { "kanji": "遅い", "word": "おそい", "meaning": "slow/late" },
+    { "kanji": "多い", "word": "おおい", "meaning": "many" },
+    { "kanji": "少ない", "word": "すくない", "meaning": "few" },
+    { "kanji": "長い", "word": "ながい", "meaning": "long" },
+    { "kanji": "短い", "word": "みじかい", "meaning": "short" },
+    { "kanji": "味", "word": "あじ", "meaning": "taste" },
+    { "kanji": "色", "word": "いろ", "meaning": "color" },
+    { "kanji": "形", "word": "かたち", "meaning": "shape" },
+    { "kanji": "心", "word": "こころ", "meaning": "heart/mind" },
+    { "kanji": "体", "word": "からだ", "meaning": "body" },
+    { "kanji": "言葉", "word": "ことば", "meaning": "word/language" },
+    { "kanji": "物", "word": "もの", "meaning": "thing" },
+    { "kanji": "場所", "word": "ばしょ", "meaning": "place" },
+    { "kanji": "道", "word": "みち", "meaning": "road" },
+    { "kanji": "空気", "word": "くうき", "meaning": "air" },
+    { "kanji": "光", "word": "ひかり", "meaning": "light" },
+    { "kanji": "影", "word": "かげ", "meaning": "shadow" },
+    { "kanji": "星", "word": "ほし", "meaning": "star" },
+    { "kanji": "夢", "word": "ゆめ", "meaning": "dream" },
+    { "kanji": "思い出", "word": "おもいで", "meaning": "memory" },
+    { "kanji": "感情", "word": "かんじょう", "meaning": "emotion" },
+    { "kanji": "愛", "word": "あい", "meaning": "love" },
+    { "kanji": "友情", "word": "ゆうじょう", "meaning": "friendship" },
+    { "kanji": "未来", "word": "みらい", "meaning": "future" },
+    { "kanji": "過去", "word": "かこ", "meaning": "past" },
+    { "kanji": "今後", "word": "こんご", "meaning": "from now on" },
+    { "kanji": "運", "word": "うん", "meaning": "luck" },
+    { "kanji": "成功", "word": "せいこう", "meaning": "success" },
+    { "kanji": "失敗", "word": "しっぱい", "meaning": "failure" },
+    { "kanji": "挑戦", "word": "ちょうせん", "meaning": "challenge" },
+    { "kanji": "目標", "word": "もくひょう", "meaning": "goal" },
+    { "kanji": "努力", "word": "どりょく", "meaning": "effort" },
+    { "kanji": "成功", "word": "せいこう", "meaning": "success" },
+    { "kanji": "教育", "word": "きょういく", "meaning": "education" },
+    { "kanji": "経験", "word": "けいけん", "meaning": "experience" },
+    { "kanji": "知識", "word": "ちしき", "meaning": "knowledge" },
+    { "kanji": "技術", "word": "ぎじゅつ", "meaning": "skill/technology" },
+    { "kanji": "科学", "word": "かがく", "meaning": "science" },
+    { "kanji": "文化", "word": "ぶんか", "meaning": "culture" },
+    { "kanji": "歴史", "word": "れきし", "meaning": "history" },
+    { "kanji": "社会", "word": "しゃかい", "meaning": "society" },
+    { "kanji": "政治", "word": "せいじ", "meaning": "politics" },
+    { "kanji": "経済", "word": "けいざい", "meaning": "economy" },
+    { "kanji": "法律", "word": "ほうりつ", "meaning": "law" },
+    { "kanji": "環境", "word": "かんきょう", "meaning": "environment" },
+    { "kanji": "健康", "word": "けんこう", "meaning": "health" },
+    { "kanji": "運動", "word": "うんどう", "meaning": "exercise" },
+    { "kanji": "食事", "word": "しょくじ", "meaning": "meal" },
+    { "kanji": "旅行", "word": "りょこう", "meaning": "travel" },
+    { "kanji": "映画", "word": "えいが", "meaning": "movie" },
+    { "kanji": "音楽", "word": "おんがく", "meaning": "music" },
+    { "kanji": "スポーツ", "word": "スポーツ", "meaning": "sports" },
+    { "kanji": "アート", "word": "アート", "meaning": "art" },
+    { "kanji": "本", "word": "ほん", "meaning": "book" },
+    { "kanji": "新聞", "word": "しんぶん", "meaning": "newspaper" },
+    { "kanji": "雑誌", "word": "ざっし", "meaning": "magazine" },
+    { "kanji": "テレビ", "word": "テレビ", "meaning": "television" },
+    { "kanji": "ラジオ", "word": "ラジオ", "meaning": "radio" },
+    { "kanji": "インターネット", "word": "インターネット", "meaning": "internet" },
+    { "kanji": "携帯", "word": "けいたい", "meaning": "mobile phone" },
+    { "kanji": "コンピュータ", "word": "コンピュータ", "meaning": "computer" },
+    { "kanji": "ゲーム", "word": "ゲーム", "meaning": "game" },
+    { "kanji": "買い物", "word": "かいもの", "meaning": "shopping" },
+    { "kanji": "食べ物", "word": "たべもの", "meaning": "food" },
+    { "kanji": "飲み物", "word": "のみもの", "meaning": "drink" },
+    { "kanji": "服", "word": "ふく", "meaning": "clothes" },
+    { "kanji": "靴", "word": "くつ", "meaning": "shoes" },
+    { "kanji": "店", "word": "みせ", "meaning": "store" },
+    { "kanji": "市場", "word": "いちば", "meaning": "market" },
+    { "kanji": "病院", "word": "びょういん", "meaning": "hospital" },
+    { "kanji": "公園", "word": "こうえん", "meaning": "park" },
+    { "kanji": "駅", "word": "えき", "meaning": "station" },
+    { "kanji": "道", "word": "みち", "meaning": "road" },
+    { "kanji": "信号", "word": "しんごう", "meaning": "traffic light" },
+    { "kanji": "車", "word": "くるま", "meaning": "car" },
+    { "kanji": "自転車", "word": "じてんしゃ", "meaning": "bicycle" },
+    { "kanji": "飛行機", "word": "ひこうき", "meaning": "airplane" },
+    { "kanji": "電車", "word": "でんしゃ", "meaning": "train" },
+    { "kanji": "バス", "word": "バス", "meaning": "bus" },
+    { "kanji": "船", "word": "ふね", "meaning": "ship" },
+    { "kanji": "旅館", "word": "りょかん", "meaning": "inn" },
+    { "kanji": "ホテル", "word": "ホテル", "meaning": "hotel" },
+    { "kanji": "観光", "word": "かんこう", "meaning": "sightseeing" },
+    { "kanji": "休暇", "word": "きゅうか", "meaning": "vacation" },
+    { "kanji": "時間", "word": "じかん", "meaning": "time" },
+    { "kanji": "週", "word": "しゅう", "meaning": "week" },
+    { "kanji": "月", "word": "つき", "meaning": "month" },
+    { "kanji": "年", "word": "とし", "meaning": "year" },
+    { "kanji": "季節", "word": "きせつ", "meaning": "season" },
+    { "kanji": "天気", "word": "てんき", "meaning": "weather" },
+    { "kanji": "空", "word": "そら", "meaning": "sky" },
+    { "kanji": "花", "word": "はな", "meaning": "flower" },
+    { "kanji": "草", "word": "くさ", "meaning": "grass" },
+    { "kanji": "葉", "word": "は", "meaning": "leaf" },
+    { "kanji": "果物", "word": "くだもの", "meaning": "fruit" },
+    { "kanji": "野菜", "word": "やさい", "meaning": "vegetable" },
+    { "kanji": "肉", "word": "にく", "meaning": "meat" },
+    { "kanji": "魚", "word": "さかな", "meaning": "fish" },
+    { "kanji": "米", "word": "こめ", "meaning": "rice" },
+    { "kanji": "パン", "word": "パン", "meaning": "bread" },
+    { "kanji": "料理", "word": "りょうり", "meaning": "cooking" },
+    { "kanji": "味噌", "word": "みそ", "meaning": "miso" },
+    { "kanji": "醤油", "word": "しょうゆ", "meaning": "soy sauce" },
+    { "kanji": "酒", "word": "さけ", "meaning": "sake" },
+    { "kanji": "食卓", "word": "しょくたく", "meaning": "dining table" },
+    { "kanji": "皿", "word": "さら", "meaning": "plate" },
+    { "kanji": "コップ", "word": "コップ", "meaning": "glass" },
+    { "kanji": "フォーク", "word": "フォーク", "meaning": "fork" },
+    { "kanji": "ナイフ", "word": "ナイフ", "meaning": "knife" },
+    { "kanji": "スプーン", "word": "スプーン", "meaning": "spoon" },
+    { "kanji": "椅子", "word": "いす", "meaning": "chair" },
+    { "kanji": "テーブル", "word": "テーブル", "meaning": "table" },
+    { "kanji": "部屋", "word": "へや", "meaning": "room" },
+    { "kanji": "窓", "word": "まど", "meaning": "window" },
+    { "kanji": "ドア", "word": "ドア", "meaning": "door" },
+    { "kanji": "照明", "word": "しょうめい", "meaning": "lighting" },
+    { "kanji": "家具", "word": "かぐ", "meaning": "furniture" },
+    { "kanji": "絵", "word": "え", "meaning": "picture" },
+    { "kanji": "写真", "word": "しゃしん", "meaning": "photo" },
+    { "kanji": "音楽", "word": "おんがく", "meaning": "music" },
+    { "kanji": "映画", "word": "えいが", "meaning": "movie" },
+    { "kanji": "ドラマ", "word": "ドラマ", "meaning": "drama" },
+    { "kanji": "小説", "word": "しょうせつ", "meaning": "novel" },
+    { "kanji": "詩", "word": "し", "meaning": "poem" },
+    { "kanji": "スポーツ", "word": "スポーツ", "meaning": "sports" },
+    { "kanji": "ゲーム", "word": "ゲーム", "meaning": "game" },
+    { "kanji": "趣味", "word": "しゅみ", "meaning": "hobby" }
+];
+
+    let currentIndex = 0;
+    let correctCount = 0;
+
+    function updateCard() {
+        const card = flashcards[currentIndex];
+        document.getElementById('kanji').innerText = card.kanji;
+        document.getElementById('kana').innerText = card.word;
+        document.getElementById('meaning').innerText = card.meaning;
+        document.getElementById('correctGuess').checked = card.correctGuess;
+
+        document.getElementById('progress').innerText = `Progress: ${correctCount}`;
+        document.getElementById('back').disabled = currentIndex === 0;
+
+        // Hide Kana and Meaning when updating the card
+        document.getElementById('kana').style.display = 'none';
+        document.getElementById('meaning').style.display = 'none';
+        document.getElementById('message').innerText = ''; // Clear message
+    }
+
+    document.getElementById('showKana').onclick = function() {
+        document.getElementById('kana').style.display = 'block';
+    };
+
+    document.getElementById('showMeaning').onclick = function() {
+        document.getElementById('meaning').style.display = 'block';
+    };
+
+    document.getElementById('back').onclick = function() {
+        if (currentIndex > 0) currentIndex--;
+        updateCard();
+    };
+
+    document.getElementById('random').onclick = function() {
+        let randomIndex;
+        do {
+            randomIndex = Math.floor(Math.random() * flashcards.length);
+        } while (flashcards[randomIndex].correctGuess);
+        currentIndex = randomIndex;
+        updateCard();
+    };
+
+    document.getElementById('next').onclick = function() {
+        if (currentIndex < flashcards.length - 1) {
+            currentIndex++;
+        } else {
+            currentIndex = 0; // Go back to the first card
+        }
+        updateCard();
+    };
+
+    document.getElementById('correctGuess').onclick = function() {
+        flashcards[currentIndex].correctGuess = this.checked;
+        correctCount += this.checked ? 1 : -1;
+        updateCard();
+    };
+
+    document.getElementById('showFirstCorrect').onclick = function() {
+        const firstCorrectIndex = flashcards.findIndex(card => card.correctGuess);
+        if (firstCorrectIndex !== -1) {
+            currentIndex = firstCorrectIndex;
+            updateCard();
+        } else {
+            document.getElementById('message').innerText = 'No correct answers yet: please choose Next or Random to continue.';
+        }
+    };
+
+    document.getElementById('nextCorrect').onclick = function() {
+        const nextCorrectIndex = flashcards.findIndex((card, index) => card.correctGuess && index > currentIndex);
+        if (nextCorrectIndex !== -1) {
+            currentIndex = nextCorrectIndex;
+            updateCard();
+        } else {
+            alert("No more correct cards.");
+        }
+    };
+
+    updateCard(); // Initial call to display the first card
+</script>
+
+</body>
+</html>
